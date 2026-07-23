@@ -46,7 +46,7 @@ const safetyDocuments = [
     title: "Approved Operational Plan",
     desc: "Our vessels operate under officially approved plans (RPK), ensuring every exclusive route complies with maritime safety regulations.",
     icon: <Ship className="w-6 h-6 md:w-8 md:h-8 text-[#B88E52]" />,
-    link: "https://drive.google.com/file/d/1UHNiZAqGEk-mHrcQ9T8P6nazVOizT8VE/view"
+    link: "https://drive.google.com/file/d/1auSwFOF_I5e0hMLMHi3_K9Oij3wYCOBI/view?usp=sharing"
   },
   {
     title: "Certificate of Nationality",
