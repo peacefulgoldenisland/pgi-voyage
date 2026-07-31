@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { collection, getDocs, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
-// import { ref, deleteObject } from 'firebase/storage'; // Dimatikan sementara
 import { db } from '@/lib/firebase';
 import { motion, Variants, AnimatePresence } from 'framer-motion';
 import { 
@@ -224,6 +223,9 @@ export default function AdminGalleryPage() {
       } else {
         await deleteDoc(doc(db, 'galleries', mediaToDelete.id));
         setMediaList(mediaList.filter(m => m.id !== mediaToDelete.id));
+        
+        // TODO (Optional): Tambahkan logic penghapusan file di server Cloudflare R2
+        // melalui endpoint khusus /api/upload/delete jika diperlukan di kemudian hari.
       }
       setIsDeleteModalOpen(false);
       setMediaToDelete(null);
@@ -417,11 +419,22 @@ export default function AdminGalleryPage() {
                     <>
                       {/* Image/Video Preview (Grid) */}
                       <div className={`relative w-full bg-gray-100 overflow-hidden ${media.type === 'reel' ? 'aspect-[9/16]' : 'aspect-[4/3]'}`}>
-                        <img 
-                          src={media.src} 
-                          alt={media.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
+                        {media.type === 'reel' && !media.isDummy ? (
+                          <video 
+                            src={media.src} 
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            muted
+                            autoPlay
+                            loop
+                            playsInline
+                          />
+                        ) : (
+                          <img 
+                            src={media.src} 
+                            alt={media.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                        )}
                         
                         {/* Penanda Jika Data Dummy */}
                         {media.isDummy && (
@@ -491,11 +504,22 @@ export default function AdminGalleryPage() {
                     <>
                       {/* Thumbnail (List) */}
                       <div className="relative w-20 h-20 md:w-24 md:h-24 shrink-0 bg-gray-100 rounded-xl overflow-hidden shadow-inner">
-                        <img 
-                          src={media.src} 
-                          alt={media.title}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                        />
+                        {media.type === 'reel' && !media.isDummy ? (
+                          <video 
+                            src={media.src} 
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                            muted
+                            autoPlay
+                            loop
+                            playsInline
+                          />
+                        ) : (
+                          <img 
+                            src={media.src} 
+                            alt={media.title}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                          />
+                        )}
                         {/* Type Icon Overlay */}
                         <div className="absolute bottom-1.5 right-1.5 bg-black/60 backdrop-blur-md p-1.5 rounded-md text-white">
                           {media.type === 'reel' ? <PlaySquare className="w-3 h-3 text-red-400" /> : <ImageIcon className="w-3 h-3 text-blue-400" />}

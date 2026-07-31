@@ -121,7 +121,7 @@ export default function CreateGalleryMediaPage() {
       if (droppedFile.type.startsWith('image/') || droppedFile.type.startsWith('video/')) {
         processFile(droppedFile);
       } else {
-        setError('Hanya mendukung file Gambar (JPG, PNG) dan Video (MP4).');
+        setError('Hanya mendukung file Gambar (JPG, PNG, WEBP) dan Video (MP4).');
       }
     }
   };
@@ -134,33 +134,29 @@ export default function CreateGalleryMediaPage() {
     }
   };
 
-  // Fungsi Upload ke Cloudinary
-  const uploadToCloudinary = async (fileToUpload: File) => {
+  // ==========================================
+  // LOGIC BARU: Upload ke Endpoint API R2 kita
+  // ==========================================
+  const uploadToServer = async (fileToUpload: File) => {
     const formData = new FormData();
     formData.append('file', fileToUpload);
-    formData.append('upload_preset', 'pgi_voyage_preset'); // Nama preset dari Cloudinary
     
-    // Cloud name kamu: danyx7uny
-    const cloudName = 'danyx7uny';
-    const resourceType = fileToUpload.type.startsWith('video/') ? 'video' : 'image';
-    const url = `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`;
-
     try {
-      const response = await fetch(url, {
+      const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       });
       
       const data = await response.json();
       
-      if (data.secure_url) {
-        return data.secure_url;
-      } else {
-        throw new Error('Gagal mendapatkan URL dari Cloudinary');
+      if (!response.ok) {
+        throw new Error(data.error || 'Gagal mendapatkan URL dari server');
       }
+
+      return data.url;
     } catch (err) {
-      console.error("Cloudinary upload error:", err);
-      throw new Error('Gagal mengunggah file ke server Cloudinary.');
+      console.error("Server upload error:", err);
+      throw new Error('Gagal mengunggah file ke Cloudflare R2.');
     }
   };
 
@@ -181,22 +177,22 @@ export default function CreateGalleryMediaPage() {
     setIsSubmitting(true);
 
     try {
-      // 1. Upload ke Cloudinary terlebih dahulu
-      setUploadStatus('Mengunggah media ke Cloudinary...');
-      const cloudinaryUrl = await uploadToCloudinary(file);
+      // 1. Upload ke Cloudflare R2 via API Route
+      setUploadStatus('Mengunggah media ke Server (R2)...');
+      const r2Url = await uploadToServer(file);
 
-      // 2. Simpan URL Cloudinary dan data lainnya ke Firestore
+      // 2. Simpan URL R2 dan data lainnya ke Firestore
       setUploadStatus('Menyimpan data ke arsip...');
       const mediaData = {
         title,
-        src: cloudinaryUrl, // Menyimpan link Cloudinary yang didapat
+        src: r2Url, // Menyimpan link Cloudflare R2 yang didapat
         type,
         categoryId,
         tripName: tripName || 'General Highlight',
         tripId: generateTripId(tripName),
         tripDate: tripDate || '',
         location,
-        storagePath: '', // Kita kosongkan karena sekarang pakai Cloudinary, bukan Firebase Storage
+        storagePath: '', // Dikosongkan, atau jika mau bisa diisi nama filenya
         createdAt: serverTimestamp(),
       };
 
@@ -227,7 +223,7 @@ export default function CreateGalleryMediaPage() {
             </Link>
             <h1 className="text-3xl font-bold text-[#11223a]">Upload Media Baru</h1>
           </div>
-          <p className="text-gray-500 ml-12">Tambahkan foto atau reel ke arsip ekspedisi menggunakan Cloudinary.</p>
+          <p className="text-gray-500 ml-12">Tambahkan foto atau reel ke arsip ekspedisi menggunakan Cloudflare R2.</p>
         </div>
       </div>
 
@@ -301,7 +297,7 @@ export default function CreateGalleryMediaPage() {
                       <p className="text-[#11223a] font-bold text-lg">
                         {isDragging ? 'Lepaskan file di sini' : 'Klik atau Drag file ke sini'}
                       </p>
-                      <p className="text-gray-500 text-sm mt-1">Mendukung file Gambar (JPG, PNG) dan Video (MP4)</p>
+                      <p className="text-gray-500 text-sm mt-1">Mendukung file Gambar (JPG, PNG, WEBP) dan Video (MP4)</p>
                     </div>
                   </div>
                 )}

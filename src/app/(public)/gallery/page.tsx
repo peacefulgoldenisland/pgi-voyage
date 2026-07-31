@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom'; // <-- Solusi Portal
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { BRAND_NAME, CONTACT } from '@/lib/constants';
@@ -82,6 +83,7 @@ const getGridSpanClass = (index: number) => {
 export default function GalleryPage() {
   const [activeTab, setActiveTab] = useState('all');
   const [lightboxItem, setLightboxItem] = useState<MediaItem | null>(null);
+  const [isMounted, setIsMounted] = useState(false); // State untuk React Portal
   
   // States for fetching data from Firestore
   const [mediaList, setMediaList] = useState<MediaItem[]>([]);
@@ -94,6 +96,19 @@ export default function GalleryPage() {
   const waNumber = CONTACT.PHONE_1.replace(/\D/g, '');
   const encodedBrand = encodeURIComponent(BRAND_NAME);
   const b2cWaLink = `https://wa.me/${waNumber}?text=Hi%20${encodedBrand},%20I%20saw%20your%20stunning%20gallery%20and%20wish%20to%20reserve%20an%20exclusive%20voyage!`;
+
+  // Mencegah background scroll saat modal terbuka & set Mounted untuk Portal
+  useEffect(() => {
+    setIsMounted(true);
+    if (lightboxItem) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [lightboxItem]);
 
   // Ambil data galeri dari Firestore "galleries"
   useEffect(() => {
@@ -109,10 +124,9 @@ export default function GalleryPage() {
         
         setMediaList(data);
 
-        // Ambil 3 gambar random untuk Hero Section agar tidak membosankan
+        // Ambil 3 gambar random khusus untuk Hero Section
         const imagesOnly = data.filter(m => m.type === 'image' && m.src);
         if (imagesOnly.length >= 3) {
-          // Shuffle array secara acak
           const shuffled = [...imagesOnly].sort(() => 0.5 - Math.random());
           setHeroImages([shuffled[0].src, shuffled[1].src, shuffled[2].src]);
         }
@@ -133,9 +147,6 @@ export default function GalleryPage() {
     : mediaList.filter(m => m.categoryId === activeTab);
 
   const reels = filteredMedia.filter(m => m.type === 'reel');
-  const images = filteredMedia.filter(m => m.type === 'image');
-
-  // Categories excluding 'all' for the editorial mapping (Tab ALL)
   const editorialCategories = categories.filter(c => c.id !== 'all');
 
   return (
@@ -143,13 +154,11 @@ export default function GalleryPage() {
       
       {/* 1. HERO SECTION (EXHIBITION STYLE) */}
       <section className="relative pt-28 pb-16 md:pt-40 md:pb-32 px-5 md:px-12 bg-[#0f172a] overflow-hidden flex items-center min-h-[70vh] lg:min-h-[85vh]">
-        {/* Subtle Background Glows */}
         <div className="absolute top-[-10%] left-[-10%] w-[300px] md:w-[500px] h-[300px] md:h-[500px] bg-[#B88E52]/10 rounded-full blur-[100px] md:blur-[120px] pointer-events-none"></div>
         <div className="absolute bottom-[-10%] right-[10%] w-[250px] md:w-[400px] h-[250px] md:h-[400px] bg-blue-500/10 rounded-full blur-[80px] md:blur-[100px] pointer-events-none"></div>
         
         <div className="max-w-7xl mx-auto w-full relative z-10 flex flex-col lg:flex-row items-center gap-10 lg:gap-8">
           
-          {/* Left Side: Text Content */}
           <motion.div 
             variants={staggerContainer}
             initial="hidden"
@@ -172,7 +181,6 @@ export default function GalleryPage() {
               A curated visual journey through the untamed beauty of the Indonesian archipelago. Explore the pristine waters, majestic wildlife, and unforgettable luxury voyages.
             </motion.p>
 
-            {/* Mobile Hero Collage (Tampil hanya di Mobile) */}
             <motion.div variants={fadeInUp} className="flex lg:hidden justify-center gap-3 mb-8 w-full max-w-md mx-auto px-4">
                <div className="w-1/3 aspect-[3/4] rounded-2xl overflow-hidden mt-4 shadow-lg border border-white/10">
                  <img src={heroImages[0]} className="w-full h-full object-cover" alt="Gallery preview 1" />
@@ -195,7 +203,6 @@ export default function GalleryPage() {
             </motion.div>
           </motion.div>
 
-          {/* Right Side: Floating Photo Stack (Hanya Desktop) */}
           <motion.div 
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
@@ -328,13 +335,13 @@ export default function GalleryPage() {
 
             {/* 4. MAIN CONTENT AREA */}
             
-            {/* SCENARIO A: 'ALL' TAB (Editorial Layout) */}
+            {/* SCENARIO A: 'ALL' TAB */}
             {activeTab === 'all' && (
               <div className="w-full flex flex-col">
                 {editorialCategories
-                  .filter((cat) => mediaList.some((m) => m.categoryId === cat.id && m.type === 'image'))
+                  .filter((cat) => mediaList.some((m) => m.categoryId === cat.id))
                   .map((cat, index) => {
-                    const catImages = mediaList.filter(m => m.categoryId === cat.id && m.type === 'image').slice(0, 4); 
+                    const catMedia = mediaList.filter(m => m.categoryId === cat.id).slice(0, 4); 
                     const isEven = index % 2 === 0;
                     const sectionBg = isEven ? 'bg-white' : 'bg-[#f8f9fa] border-y border-gray-100';
 
@@ -349,7 +356,6 @@ export default function GalleryPage() {
                       >
                         <div className={`max-w-7xl mx-auto flex flex-col ${isEven ? 'lg:flex-row' : 'lg:flex-row-reverse'} gap-8 md:gap-12 lg:gap-16`}>
                           
-                          {/* Text Block */}
                           <div className="w-full lg:w-1/3">
                             <motion.div variants={fadeInUp} className="lg:sticky lg:top-40">
                               <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-[#fdfaf5] border border-[#B88E52]/20 flex items-center justify-center mb-4 md:mb-6 shadow-sm">
@@ -377,36 +383,55 @@ export default function GalleryPage() {
                             </motion.div>
                           </div>
 
-                          {/* BENTO GRID BLOCK */}
                           <div className="w-full lg:w-2/3 flex flex-col">
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 lg:gap-6 auto-rows-[120px] sm:auto-rows-[160px] md:auto-rows-[200px] grid-flow-dense">
-                              {catImages.map((image, imgIdx) => {
+                              {catMedia.map((mediaItem, imgIdx) => {
                                 const spanClass = getGridSpanClass(imgIdx);
 
                                 return (
                                   <motion.div
-                                    key={image.id}
+                                    key={mediaItem.id}
                                     variants={fadeInUp}
-                                    onClick={() => setLightboxItem(image)}
+                                    onClick={() => setLightboxItem(mediaItem)}
                                     onContextMenu={(e) => e.preventDefault()}
                                     className={`relative overflow-hidden rounded-[1rem] md:rounded-[1.5rem] lg:rounded-3xl group cursor-pointer bg-gray-200 shadow-md hover:shadow-xl transition-all ${spanClass}`}
                                   >
-                                    <img
-                                      src={image.src}
-                                      alt={image.title}
-                                      draggable={false}
-                                      onContextMenu={(e) => e.preventDefault()}
-                                      className="w-full h-full object-cover transition-transform duration-1000 md:group-hover:scale-105 pointer-events-none"
-                                    />
+                                    {mediaItem.type === 'reel' ? (
+                                      <video
+                                        src={mediaItem.src}
+                                        className="w-full h-full object-cover transition-transform duration-1000 md:group-hover:scale-105 pointer-events-none"
+                                        muted
+                                        autoPlay
+                                        loop
+                                        playsInline
+                                        onContextMenu={(e) => e.preventDefault()}
+                                      />
+                                    ) : (
+                                      <img
+                                        src={mediaItem.src}
+                                        alt={mediaItem.title}
+                                        draggable={false}
+                                        onContextMenu={(e) => e.preventDefault()}
+                                        className="w-full h-full object-cover transition-transform duration-1000 md:group-hover:scale-105 pointer-events-none"
+                                        loading="lazy"
+                                      />
+                                    )}
+                                    
                                     <div className="absolute inset-0 bg-[#0f172a]/20 md:bg-[#0f172a]/40 opacity-0 md:group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
                                     
-                                    <div className="md:hidden absolute bottom-2 right-2 bg-white/90 backdrop-blur-sm p-1.5 rounded-full shadow-sm pointer-events-none">
-                                       <Images className="w-3.5 h-3.5 text-[#0f172a]" />
-                                    </div>
+                                    {mediaItem.type === 'reel' ? (
+                                      <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-md p-1.5 rounded-full shadow-sm pointer-events-none">
+                                        <Play className="w-3.5 h-3.5 text-white fill-white" />
+                                      </div>
+                                    ) : (
+                                      <div className="md:hidden absolute bottom-2 right-2 bg-white/90 backdrop-blur-sm p-1.5 rounded-full shadow-sm pointer-events-none">
+                                        <Images className="w-3.5 h-3.5 text-[#0f172a]" />
+                                      </div>
+                                    )}
 
                                     <div className="hidden md:flex absolute inset-0 flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 p-4 text-center pointer-events-none">
-                                      <span className="bg-white/95 backdrop-blur-sm text-[#0f172a] font-bold text-xs uppercase tracking-widest px-6 py-3 rounded-full shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-all duration-500">
-                                        Expand Image
+                                      <span className="bg-white/95 backdrop-blur-sm text-[#0f172a] font-bold text-xs uppercase tracking-widest px-6 py-3 rounded-full shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-all duration-500 flex items-center gap-2">
+                                        {mediaItem.type === 'reel' ? 'Play Video' : 'Expand Image'}
                                       </span>
                                     </div>
                                   </motion.div>
@@ -435,8 +460,8 @@ export default function GalleryPage() {
               </div>
             )}
 
-            {/* SCENARIO B: SPECIFIC CATEGORY TAB (Grid Layout) */}
-            {activeTab !== 'all' && images.length > 0 && (
+            {/* SCENARIO B: SPECIFIC CATEGORY TAB */}
+            {activeTab !== 'all' && filteredMedia.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -451,37 +476,53 @@ export default function GalleryPage() {
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6 auto-rows-[140px] sm:auto-rows-[180px] md:auto-rows-[250px] grid-flow-dense">
-                  {images.map((image, index) => {
+                  {filteredMedia.map((mediaItem, index) => {
                     const spanClass = getGridSpanClass(index);
 
                     return (
                       <motion.div
-                        key={image.id}
+                        key={mediaItem.id}
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 0.4 }}
-                        onClick={() => setLightboxItem(image)}
+                        onClick={() => setLightboxItem(mediaItem)}
                         onContextMenu={(e) => e.preventDefault()}
                         className={`break-inside-avoid relative rounded-[1rem] md:rounded-[1.5rem] overflow-hidden cursor-pointer group shadow-sm hover:shadow-xl transition-all bg-gray-200 ${spanClass}`}
                       >
-                        <img 
-                          src={image.src} 
-                          alt={image.title} 
-                          draggable={false}
-                          onContextMenu={(e) => e.preventDefault()}
-                          className="w-full h-full object-cover transition-transform duration-1000 md:group-hover:scale-105 pointer-events-none"
-                          loading="lazy"
-                        />
+                        {mediaItem.type === 'reel' ? (
+                          <video
+                            src={mediaItem.src}
+                            className="w-full h-full object-cover transition-transform duration-1000 md:group-hover:scale-105 pointer-events-none"
+                            muted
+                            autoPlay
+                            loop
+                            playsInline
+                            onContextMenu={(e) => e.preventDefault()}
+                          />
+                        ) : (
+                          <img 
+                            src={mediaItem.src} 
+                            alt={mediaItem.title} 
+                            draggable={false}
+                            onContextMenu={(e) => e.preventDefault()}
+                            className="w-full h-full object-cover transition-transform duration-1000 md:group-hover:scale-105 pointer-events-none"
+                            loading="lazy"
+                          />
+                        )}
+
                         <div className="absolute inset-0 bg-gradient-to-t from-[#0f172a]/90 via-[#0f172a]/20 to-transparent opacity-80 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-4 md:p-5 lg:p-6 pointer-events-none">
                           <div className="transform translate-y-0 md:translate-y-4 md:group-hover:translate-y-0 transition-transform duration-500">
-                            <h3 className="font-heading text-white font-bold text-sm md:text-base lg:text-lg mb-1 line-clamp-1">{image.title}</h3>
+                            <h3 className="font-heading text-white font-bold text-sm md:text-base lg:text-lg mb-1 line-clamp-1 flex items-center gap-2">
+                              {mediaItem.type === 'reel' && <Play className="w-4 h-4 shrink-0 fill-white" />}
+                              {mediaItem.title}
+                            </h3>
                             <div className="flex flex-col gap-1">
                               <p className="text-[#B88E52] text-[10px] md:text-xs font-semibold uppercase tracking-widest flex items-center gap-1.5">
-                                <MapPin className="w-3 h-3" /> {image.location}
+                                <MapPin className="w-3 h-3" /> {mediaItem.location}
                               </p>
-                              {image.tripName && (
+                              {mediaItem.tripName && (
                                 <p className="text-gray-300 text-[9px] md:text-[10px] uppercase tracking-widest flex items-center gap-1.5 line-clamp-1 mt-1">
-                                  <Calendar className="w-3 h-3 shrink-0" /> {image.tripName}
+                                  <Calendar className="w-3 h-3 shrink-0" /> {mediaItem.tripName}
                                 </p>
                               )}
                             </div>
@@ -540,66 +581,69 @@ export default function GalleryPage() {
         </motion.div>
       </section>
 
-      {/* 5. FULLSCREEN LIGHTBOX MODAL */}
-      <AnimatePresence>
-        {lightboxItem && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-[#0f172a]/95 backdrop-blur-xl flex items-center justify-center p-0 sm:p-4 md:p-8"
-            onClick={() => setLightboxItem(null)}
-            onContextMenu={(e) => e.preventDefault()}
-          >
-            <button 
-              className="absolute top-4 right-4 md:top-6 md:right-6 z-50 w-10 h-10 md:w-12 md:h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white backdrop-blur-md transition-colors"
-              onClick={() => setLightboxItem(null)}
-            >
-              <X className="w-5 h-5 md:w-6 md:h-6" />
-            </button>
-
+      {/* 5. FULLSCREEN LIGHTBOX MODAL - DIPINDAHKAN KE PORTAL */}
+      {isMounted && createPortal(
+        <AnimatePresence>
+          {lightboxItem && (
             <motion.div 
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className={`relative w-full h-full sm:h-auto max-h-[100vh] sm:max-h-[90vh] flex flex-col items-center justify-center ${lightboxItem.type === 'reel' ? 'max-w-md' : 'max-w-5xl'}`}
-              onClick={(e) => e.stopPropagation()} 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[9999] bg-[#0f172a]/95 backdrop-blur-xl flex items-center justify-center p-0 sm:p-4 md:p-8"
+              onClick={() => setLightboxItem(null)}
+              onContextMenu={(e) => e.preventDefault()}
             >
-              {lightboxItem.type === 'reel' ? (
-                 <div className="relative w-full sm:w-[90%] md:w-full h-full sm:h-auto aspect-[9/16] bg-black sm:rounded-[2rem] overflow-hidden shadow-2xl sm:ring-1 sm:ring-white/20">
-                   <video 
-                     src={lightboxItem.src} 
-                     className="w-full h-full object-cover" 
-                     controls 
-                     autoPlay 
-                     playsInline 
-                     controlsList="nodownload"
-                     onContextMenu={(e) => e.preventDefault()}
-                   />
-                   <div className="absolute top-0 inset-x-0 h-24 bg-gradient-to-b from-[#0f172a]/80 to-transparent pointer-events-none"></div>
-                 </div>
-              ) : (
-                <div className="relative w-full h-full flex flex-col items-center justify-center p-4">
-                  <img 
-                    src={lightboxItem.src} 
-                    alt={lightboxItem.title} 
-                    draggable={false}
-                    onContextMenu={(e) => e.preventDefault()}
-                    className="max-w-full max-h-[75vh] md:max-h-[80vh] object-contain rounded-lg shadow-2xl pointer-events-none"
-                  />
-                  <div className="mt-4 md:mt-6 text-center bg-[#0f172a]/80 sm:bg-transparent backdrop-blur-md sm:backdrop-blur-none p-4 sm:p-0 rounded-xl sm:rounded-none w-full sm:w-auto absolute bottom-4 sm:relative">
-                    <h3 className="font-heading text-white text-lg md:text-2xl font-bold leading-tight">{lightboxItem.title}</h3>
-                    <p className="text-[#B88E52] mt-1 md:mt-2 flex items-center justify-center gap-1 md:gap-2 text-[10px] md:text-xs font-semibold uppercase tracking-widest">
-                      <MapPin className="w-3.5 h-3.5 md:w-4 md:h-4"/> {lightboxItem.location}
-                    </p>
+              <button 
+                className="absolute top-4 right-4 md:top-6 md:right-6 z-50 w-10 h-10 md:w-12 md:h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white backdrop-blur-md transition-colors"
+                onClick={() => setLightboxItem(null)}
+              >
+                <X className="w-5 h-5 md:w-6 md:h-6" />
+              </button>
+
+              <motion.div 
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className={`relative w-full h-full sm:h-auto max-h-[100vh] sm:max-h-[90vh] flex flex-col items-center justify-center ${lightboxItem.type === 'reel' ? 'max-w-md' : 'max-w-5xl'}`}
+                onClick={(e) => e.stopPropagation()} 
+              >
+                {lightboxItem.type === 'reel' ? (
+                   <div className="relative w-full sm:w-[90%] md:w-full h-full sm:h-auto aspect-[9/16] bg-black sm:rounded-[2rem] overflow-hidden shadow-2xl sm:ring-1 sm:ring-white/20">
+                     <video 
+                       src={lightboxItem.src} 
+                       className="w-full h-full object-cover" 
+                       controls 
+                       autoPlay 
+                       playsInline 
+                       controlsList="nodownload"
+                       onContextMenu={(e) => e.preventDefault()}
+                     />
+                     <div className="absolute top-0 inset-x-0 h-24 bg-gradient-to-b from-[#0f172a]/80 to-transparent pointer-events-none"></div>
+                   </div>
+                ) : (
+                  <div className="relative w-full h-full flex flex-col items-center justify-center p-4">
+                    <img 
+                      src={lightboxItem.src} 
+                      alt={lightboxItem.title} 
+                      draggable={false}
+                      onContextMenu={(e) => e.preventDefault()}
+                      className="max-w-full max-h-[75vh] md:max-h-[80vh] object-contain rounded-lg shadow-2xl pointer-events-none"
+                    />
+                    <div className="mt-4 md:mt-6 text-center bg-[#0f172a]/80 sm:bg-transparent backdrop-blur-md sm:backdrop-blur-none p-4 sm:p-0 rounded-xl sm:rounded-none w-full sm:w-auto absolute bottom-4 sm:relative">
+                      <h3 className="font-heading text-white text-lg md:text-2xl font-bold leading-tight">{lightboxItem.title}</h3>
+                      <p className="text-[#B88E52] mt-1 md:mt-2 flex items-center justify-center gap-1 md:gap-2 text-[10px] md:text-xs font-semibold uppercase tracking-widest">
+                        <MapPin className="w-3.5 h-3.5 md:w-4 md:h-4"/> {lightboxItem.location}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>,
+        document.body // <-- Inject Langsung ke body HTML (Portal)
+      )}
 
     </main>
   );  

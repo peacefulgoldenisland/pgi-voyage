@@ -152,7 +152,7 @@ export default function EditGalleryMediaPage() {
       if (droppedFile.type.startsWith('image/') || droppedFile.type.startsWith('video/')) {
         processFile(droppedFile);
       } else {
-        setError('Hanya mendukung file Gambar (JPG, PNG) dan Video (MP4).');
+        setError('Hanya mendukung file Gambar (JPG, PNG, WEBP) dan Video (MP4).');
       }
     }
   };
@@ -165,32 +165,29 @@ export default function EditGalleryMediaPage() {
     }
   };
 
-  // Fungsi Upload ke Cloudinary
-  const uploadToCloudinary = async (fileToUpload: File) => {
+  // ==========================================
+  // LOGIC BARU: Upload ke Endpoint API R2 kita
+  // ==========================================
+  const uploadToServer = async (fileToUpload: File) => {
     const formData = new FormData();
     formData.append('file', fileToUpload);
-    formData.append('upload_preset', 'pgi_voyage_preset'); 
     
-    const cloudName = 'danyx7uny';
-    const resourceType = fileToUpload.type.startsWith('video/') ? 'video' : 'image';
-    const url = `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`;
-
     try {
-      const response = await fetch(url, {
+      const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       });
       
       const data = await response.json();
       
-      if (data.secure_url) {
-        return data.secure_url;
-      } else {
-        throw new Error('Gagal mendapatkan URL dari Cloudinary');
+      if (!response.ok) {
+        throw new Error(data.error || 'Gagal mendapatkan URL dari server');
       }
+
+      return data.url;
     } catch (err) {
-      console.error("Cloudinary upload error:", err);
-      throw new Error('Gagal mengunggah file ke server Cloudinary.');
+      console.error("Server upload error:", err);
+      throw new Error('Gagal mengunggah file ke Cloudflare R2.');
     }
   };
 
@@ -213,10 +210,10 @@ export default function EditGalleryMediaPage() {
     try {
       let finalSrc = existingSrc;
 
-      // Jika ada file baru yang diupload, upload ke Cloudinary dulu
+      // Jika ada file baru yang diupload, upload ke Server/R2 dulu
       if (file) {
-        setUploadStatus('Mengunggah media baru ke Cloudinary...');
-        finalSrc = await uploadToCloudinary(file);
+        setUploadStatus('Mengunggah media baru ke Server (R2)...');
+        finalSrc = await uploadToServer(file);
       }
 
       setUploadStatus('Memperbarui data di arsip...');
