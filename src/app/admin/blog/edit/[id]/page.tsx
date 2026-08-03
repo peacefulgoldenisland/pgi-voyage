@@ -194,23 +194,28 @@ export default function EditBlogPage() {
     setSlug(autoSlug);
   };
 
-  // --- CLOUDINARY UPLOAD GENERAL FUNCTION ---
-  const uploadToCloudinary = async (fileToUpload: File) => {
+  // --- CLOUDFLARE R2 UPLOAD FUNCTION ---
+  const uploadToR2 = async (fileToUpload: File) => {
     const formData = new FormData();
     formData.append('file', fileToUpload);
-    formData.append('upload_preset', 'pgi_voyage_preset'); 
-    
-    const cloudName = 'danyx7uny';
-    const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
 
     try {
-      const response = await fetch(url, { method: 'POST', body: formData });
+      const response = await fetch('/api/upload', { 
+        method: 'POST', 
+        body: formData 
+      });
+      
       const data = await response.json();
-      if (data.secure_url) return data.secure_url;
-      throw new Error('Gagal mendapatkan URL dari Cloudinary');
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Gagal upload ke server');
+      }
+      
+      if (data.url) return data.url;
+      throw new Error('Gagal mendapatkan URL dari Cloudflare R2');
     } catch (err) {
-      console.error("Cloudinary upload error:", err);
-      throw new Error('Gagal mengunggah gambar ke Cloudinary.');
+      console.error("R2 upload error:", err);
+      throw new Error('Gagal mengunggah gambar ke Cloudflare R2.');
     }
   };
 
@@ -265,11 +270,11 @@ export default function EditBlogPage() {
       // 1. Jika User upload file
       setIsUploadingEditorImage(true);
       try {
-        const cloudinaryUrl = await uploadToCloudinary(editorImageFile);
-        editor.chain().focus().setImage({ src: cloudinaryUrl }).run();
+        const r2Url = await uploadToR2(editorImageFile);
+        editor.chain().focus().setImage({ src: r2Url }).run();
         closeImageModal();
       } catch (err) {
-        alert("Gagal mengunggah gambar ke Cloudinary.");
+        alert("Gagal mengunggah gambar ke server R2.");
       } finally {
         setIsUploadingEditorImage(false);
       }
@@ -301,10 +306,10 @@ export default function EditBlogPage() {
     try {
       let finalCoverImageUrl = coverImage; // Default ke URL yang sudah ada
       
-      // Upload ke Cloudinary hanya jika ada file BARU yang dipilih
+      // Upload ke R2 hanya jika ada file BARU yang dipilih
       if (file) {
         setUploadStatus('Mengunggah Cover Image Baru...');
-        finalCoverImageUrl = await uploadToCloudinary(file);
+        finalCoverImageUrl = await uploadToR2(file);
       }
 
       setUploadStatus(targetStatus === 'Draft' ? 'Menyimpan ke Draft...' : 'Publishing Artikel...');
@@ -449,7 +454,7 @@ export default function EditBlogPage() {
           {/* KOLOM KANAN (Metadata & Image Upload) */}
           <motion.div variants={fadeInUp} className="w-full lg:w-1/3 space-y-6 relative z-10">
             
-            {/* Card: Cover Image Settings (CLOUDNIARY) */}
+            {/* Card: Cover Image Settings (CLOUDFLARE R2) */}
             <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-[#B88E52]/5 rounded-bl-[100px] -z-0 pointer-events-none"></div>
               
@@ -626,7 +631,7 @@ export default function EditBlogPage() {
                 
                 {/* Opsi 1: Upload File */}
                 <div>
-                  <label className="block text-sm font-bold text-[#11223a] mb-3">Opsi 1: Upload dari Perangkat (Cloudinary)</label>
+                  <label className="block text-sm font-bold text-[#11223a] mb-3">Opsi 1: Upload dari Perangkat (Otomatis ke R2)</label>
                   <div 
                     className={`relative border-2 border-dashed rounded-2xl p-6 transition-all text-center overflow-hidden ${
                       isEditorImageDragging 
@@ -675,7 +680,7 @@ export default function EditBlogPage() {
                         </div>
                         <div>
                           <p className="text-[#11223a] font-bold text-sm">Klik atau Drop Gambar di Sini</p>
-                          <p className="text-gray-400 text-[11px] mt-1">Otomatis diunggah ke Cloudinary</p>
+                          <p className="text-gray-400 text-[11px] mt-1">Gambar akan diunggah ke Cloudflare R2</p>
                         </div>
                       </div>
                     )}

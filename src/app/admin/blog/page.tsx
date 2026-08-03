@@ -19,11 +19,12 @@ import {
   List as ListIcon,
   ChevronDown,
   Calendar,
-  User as UserIcon
+  User as UserIcon,
+  Image as ImageIcon
 } from 'lucide-react';
 import Link from 'next/link';
 
-// Tipe data Blog sesuai skema Firestore kita
+// Tipe data Blog (Sudah ditambahkan coverImage)
 interface Blog {
   id: string;
   title: string;
@@ -31,7 +32,8 @@ interface Blog {
   category: string;
   author: string;
   status: 'Published' | 'Draft';
-  createdAt: any; // Firestore timestamp
+  coverImage?: string; // Menyimpan link gambar dari Cloudflare R2
+  createdAt: any; 
 }
 
 const fadeInUp: Variants = {
@@ -125,7 +127,7 @@ export default function AdminBlogPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid'); // Default jadi grid agar cover R2 langsung kelihatan
   
   // State Modal Hapus
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -166,7 +168,6 @@ export default function AdminBlogPage() {
     fetchBlogs();
   }, []);
 
-  // Ekstrak daftar kategori unik secara dinamis dari data blogs
   const uniqueCategories = useMemo(() => {
     const cats = new Set(blogs.map(b => b.category).filter(Boolean));
     return Array.from(cats);
@@ -204,7 +205,6 @@ export default function AdminBlogPage() {
     }
   };
 
-  // Filter Logic Cerdas
   const filteredBlogs = blogs.filter(blog => {
     const matchesSearch = 
       blog.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -359,16 +359,28 @@ export default function AdminBlogPage() {
                   {/* --- TAMPILAN JIKA GRID MODE (CARDS) --- */}
                   {viewMode === 'grid' ? (
                     <>
-                      {/* Placeholder Image / Header Dekoratif untuk Card */}
-                      <div className="h-32 bg-gradient-to-r from-[#11223a] to-[#1a365d] relative overflow-hidden flex items-center justify-center p-6">
-                        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent mix-blend-overlay"></div>
-                        <FileText className="w-12 h-12 text-white/20 absolute -bottom-4 -right-4 transform -rotate-12" />
+                      {/* TAMPILKAN COVER IMAGE DARI CLOUDFLARE R2 */}
+                      <div className="h-44 bg-gray-100 relative overflow-hidden flex items-center justify-center">
+                        {blog.coverImage ? (
+                          <img 
+                            src={blog.coverImage} 
+                            alt={blog.title} 
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                            loading="lazy"
+                          />
+                        ) : (
+                          // Fallback jika artikel tidak punya cover
+                          <div className="absolute inset-0 bg-gradient-to-r from-[#11223a] to-[#1a365d] flex items-center justify-center p-6">
+                            <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent mix-blend-overlay"></div>
+                            <ImageIcon className="w-12 h-12 text-white/20 absolute -bottom-4 -right-4 transform -rotate-12" />
+                          </div>
+                        )}
                         
                         {/* Status Badge */}
-                        <div className={`absolute top-4 left-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold shadow-sm ${
+                        <div className={`absolute top-4 left-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold shadow-sm backdrop-blur-md ${
                           blog.status === 'Published' 
-                            ? 'bg-emerald-500 text-white' 
-                            : 'bg-amber-500 text-white'
+                            ? 'bg-emerald-500/90 text-white' 
+                            : 'bg-amber-500/90 text-white'
                         }`}>
                           <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
                           {blog.status}
@@ -432,9 +444,15 @@ export default function AdminBlogPage() {
                     <>
                       {/* Icon & Details */}
                       <div className="flex-1 min-w-0 flex items-center gap-4 w-full">
-                        <div className="hidden sm:flex w-12 h-12 bg-gray-50 rounded-xl items-center justify-center shrink-0 border border-gray-100 text-gray-400">
-                          <FileText className="w-6 h-6" />
+                        {/* Thumbnail Kecil (List View) */}
+                        <div className="hidden sm:flex w-16 h-16 bg-gray-50 rounded-xl items-center justify-center shrink-0 border border-gray-100 text-gray-400 overflow-hidden relative">
+                          {blog.coverImage ? (
+                            <img src={blog.coverImage} alt={blog.title} className="w-full h-full object-cover" loading="lazy" />
+                          ) : (
+                            <FileText className="w-6 h-6" />
+                          )}
                         </div>
+                        
                         <div className="flex-1 min-w-0">
                           <h3 className="font-bold text-[#11223a] text-base md:text-lg truncate mb-1" title={blog.title}>
                             {blog.title}

@@ -7,6 +7,22 @@ import { BRAND_NAME } from "@/lib/constants";
 import { motion, Variants, AnimatePresence } from "framer-motion";
 import { ArrowRight, Calendar, BookOpen, Clock, Star, Mail, Loader2, Filter, CheckCircle, Feather } from "lucide-react";
 
+// 1. Tambahkan Interface TypeScript yang rapi (menggantikan 'any')
+interface Blog {
+  id: string;
+  title: string;
+  slug: string;
+  category: string;
+  author: string;
+  status: string;
+  coverImage?: string;
+  content?: string;
+  excerpt: string;
+  formattedDate: string;
+  readTime: string;
+  createdAt: any;
+}
+
 const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 30 },
   visible: { 
@@ -33,7 +49,8 @@ const stripHtml = (html: string) => {
 };
 
 export default function BlogPage() {
-  const [blogs, setBlogs] = useState<any[]>([]);
+  // Gunakan interface Blog yang sudah dibuat
+  const [blogs, setBlogs] = useState<Blog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   // State untuk Filter Kategori
@@ -54,7 +71,7 @@ export default function BlogPage() {
         const q = query(blogsRef, where('status', '==', 'Published'), orderBy('createdAt', 'desc'));
         const querySnapshot = await getDocs(q);
         
-        const fetchedBlogs: any[] = [];
+        const fetchedBlogs: Blog[] = [];
         const uniqueCategories = new Set<string>();
 
         querySnapshot.forEach((doc) => {
@@ -79,7 +96,7 @@ export default function BlogPage() {
             formattedDate,
             excerpt,
             readTime: data.readTime || "5 min read"
-          });
+          } as Blog);
         });
         
         setBlogs(fetchedBlogs);
@@ -198,6 +215,9 @@ export default function BlogPage() {
                       <img 
                         src={featuredPost.coverImage} 
                         alt={featuredPost.title}
+                        // OPTIMASI SEO & LCP: fetchPriority high untuk artikel sorotan
+                        fetchPriority="high"
+                        decoding="async"
                         className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
                       />
                     ) : (
@@ -297,7 +317,7 @@ export default function BlogPage() {
                       </motion.div>
                     ) : (
                       <motion.div 
-                        key={activeCategory} // Memastikan transisi mulus saat pindah filter
+                        key={activeCategory}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
@@ -316,6 +336,9 @@ export default function BlogPage() {
                                 <img 
                                   src={post.coverImage} 
                                   alt={post.title}
+                                  // OPTIMASI: Gambar grid diload secara "lazy" agar menghemat kuota internet dan mempercepat halaman
+                                  loading="lazy"
+                                  decoding="async"
                                   className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
                                 />
                               ) : (

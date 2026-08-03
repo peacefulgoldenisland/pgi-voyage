@@ -9,6 +9,36 @@ import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { Calendar, User, Clock, ChevronLeft, Link as LinkIcon, Loader2, Mail, CheckCircle, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 
+// 1. Tambahkan Interface yang rapi untuk menggantikan tipe 'any'
+interface Article {
+  id: string;
+  title: string;
+  slug: string;
+  category: string;
+  author: string;
+  content: string;
+  coverImage?: string;
+  formattedDate: string;
+  readTime?: string;
+  createdAt?: any;
+}
+
+interface CommentData {
+  id: string;
+  name: string;
+  text: string;
+  formattedDate: string;
+  timestamp?: number;
+  createdAt?: any;
+}
+
+interface RelatedArticle {
+  title: string;
+  slug: string;
+  coverImage?: string;
+  formattedDate: string;
+}
+
 const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 30 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.25, 0.1, 0.25, 1] } }
@@ -23,9 +53,10 @@ export default function PublicBlogDetailPage() {
   const params = useParams();
   const slug = params?.slug as string;
   
-  const [article, setArticle] = useState<any>(null);
-  const [relatedArticles, setRelatedArticles] = useState<any[]>([]);
-  const [comments, setComments] = useState<any[]>([]);
+  // 2. Gunakan Interface pada State
+  const [article, setArticle] = useState<Article | null>(null);
+  const [relatedArticles, setRelatedArticles] = useState<RelatedArticle[]>([]);
+  const [comments, setComments] = useState<CommentData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   // State untuk Toast Notification "Copy Link"
@@ -61,7 +92,7 @@ export default function PublicBlogDetailPage() {
         status: 'approved'
       });
 
-      const newCommentData = {
+      const newCommentData: CommentData = {
         id: Date.now().toString(),
         name: newComment.name,
         text: newComment.text,
@@ -100,38 +131,51 @@ export default function PublicBlogDetailPage() {
           const dateObj = docData.createdAt?.toDate();
           const formattedDate = dateObj ? new Intl.DateTimeFormat('en-US', { day: 'numeric', month: 'long', year: 'numeric' }).format(dateObj) : 'Recently';
           
-          setArticle({ id: articleId, ...docData, formattedDate });
+          setArticle({ id: articleId, ...docData, formattedDate } as Article);
 
           // 2. Fetch Komentar untuk artikel ini
           const commentsRef = collection(db, 'comments');
           const commentsQ = query(commentsRef, where('blogId', '==', articleId));
           const commentsSnap = await getDocs(commentsQ);
           
-          const commentsData: any[] = [];
+          const commentsData: CommentData[] = [];
           commentsSnap.forEach(c => {
             const cData = c.data();
             if (cData.status === 'approved' || !cData.status) {
               const cDateObj = cData.createdAt?.toDate();
-              cData.formattedDate = cDateObj ? new Intl.DateTimeFormat('en-US', { day: 'numeric', month: 'short', year: 'numeric' }).format(cDateObj) : 'Just now';
-              cData.timestamp = cDateObj ? cDateObj.getTime() : 0;
-              commentsData.push({ id: c.id, ...cData });
+              const cFormattedDate = cDateObj ? new Intl.DateTimeFormat('en-US', { day: 'numeric', month: 'short', year: 'numeric' }).format(cDateObj) : 'Just now';
+              const timestamp = cDateObj ? cDateObj.getTime() : 0;
+              
+              commentsData.push({ 
+                id: c.id, 
+                name: cData.name,
+                text: cData.text,
+                formattedDate: cFormattedDate,
+                timestamp: timestamp 
+              });
             }
           });
           
-          commentsData.sort((a, b) => b.timestamp - a.timestamp);
+          commentsData.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
           setComments(commentsData);
 
           // 3. Fetch Artikel Terkait
           const relatedQ = query(blogsRef, where('status', '==', 'Published'), limit(4));
           const relatedSnap = await getDocs(relatedQ);
-          const relatedData: any[] = [];
+          const relatedData: RelatedArticle[] = [];
           
           relatedSnap.forEach(d => {
             const data = d.data();
             if (data.slug !== slug) {
               const dObj = data.createdAt?.toDate();
-              data.formattedDate = dObj ? new Intl.DateTimeFormat('en-US', { day: 'numeric', month: 'short', year: 'numeric' }).format(dObj) : 'Recently';
-              relatedData.push(data);
+              const relFormattedDate = dObj ? new Intl.DateTimeFormat('en-US', { day: 'numeric', month: 'short', year: 'numeric' }).format(dObj) : 'Recently';
+              
+              relatedData.push({
+                title: data.title,
+                slug: data.slug,
+                coverImage: data.coverImage,
+                formattedDate: relFormattedDate
+              });
             }
           });
           
@@ -385,7 +429,14 @@ export default function PublicBlogDetailPage() {
                   relatedArticles.map((rel, idx) => (
                     <Link key={idx} href={`/blog/${rel.slug}`} className="group flex gap-3 md:gap-4 items-center">
                       <div className="w-16 h-16 md:w-20 md:h-20 rounded-xl overflow-hidden shrink-0 border border-gray-100">
-                        <img src={rel.coverImage || "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?q=80&w=200"} alt={rel.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                        <img 
+                          src={rel.coverImage || "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?q=80&w=200"} 
+                          alt={rel.title} 
+                          // OPTIMASI: Lazy load untuk gambar di sidebar
+                          loading="lazy" 
+                          decoding="async"
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                        />
                       </div>
                       <div>
                         <h4 className="font-bold text-[#0f172a] text-xs md:text-sm leading-snug line-clamp-2 group-hover:text-[#B88E52] transition-colors mb-1.5 pr-2">{rel.title}</h4>
@@ -467,7 +518,7 @@ export default function PublicBlogDetailPage() {
         /* Bold */
         .article-content strong { font-weight: 700; color: #0f172a; }
         
-        /* Images inside TipTap */
+        /* Images inside TipTap - Style bawaan ini sudah sangat aman untuk gambar ukuran besar dari Cloudflare R2! */
         .article-content img { 
           max-width: 100%; 
           height: auto; 

@@ -23,26 +23,20 @@ export default function AdminHeader({ setIsMobileOpen }: AdminHeaderProps) {
   const { scrollY } = useScroll();
 
   // 1. CEK HALAMAN SAAT INI
-  // Jika kita berada di halaman create atau edit, kita akan menyembunyikan header ini sepenuhnya
   const isEditorPage = 
     pathname.includes('/admin/blog/create') || 
     pathname.includes('/admin/blog/edit/') ||
     pathname.includes('/admin/gallery/create') ||
     pathname.includes('/admin/gallery/edit/');
 
-  // Logika Smart Scroll (Sembunyikan saat scroll turun, tampilkan saat scroll naik)
+  // Logika Smart Scroll
   useMotionValueEvent(scrollY, "change", (latest) => {
-    // Jangan jalankan logika scroll jika kita di halaman editor (karena headernya sudah hilang)
     if (isEditorPage) return;
-
     const previous = scrollY.getPrevious() ?? 0;
     
-    // Jika user scroll ke bawah lebih dari 100px, sembunyikan header
     if (latest > previous && latest > 100) {
       setIsHidden(true);
-    } 
-    // Jika user scroll ke atas, tampilkan kembali header
-    else if (latest < previous) {
+    } else if (latest < previous) {
       setIsHidden(false);
     }
   });
@@ -59,7 +53,6 @@ export default function AdminHeader({ setIsMobileOpen }: AdminHeaderProps) {
     return () => unsubscribe();
   }, []);
 
-  // JIKA SEDANG DI HALAMAN EDITOR (Create/Edit), JANGAN TAMPILKAN HEADER SAMA SEKALI
   if (isEditorPage) {
     return null;
   }
@@ -72,7 +65,6 @@ export default function AdminHeader({ setIsMobileOpen }: AdminHeaderProps) {
       }}
       animate={isHidden ? 'hidden' : 'visible'}
       transition={{ duration: 0.3, ease: 'easeInOut' }}
-      // Z-index kita tinggikan ke 40 agar berada di atas konten lainnya
       className="h-20 bg-white/90 backdrop-blur-xl border-b border-gray-200/60 sticky top-0 z-40 px-6 flex items-center justify-between shadow-sm"
     >
       <div className="flex items-center gap-4">

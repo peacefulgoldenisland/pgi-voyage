@@ -17,7 +17,9 @@ export default function AdminLayout({
   
   // State navigasi & layout sidebar
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  
+  // PENTING: Set default ke TRUE (Sidebar ciut) agar tidak lompat saat pertama load
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true); 
 
   // JIKA BERADA DI HALAMAN LOGIN, JANGAN TAMPILKAN LAYOUT DAN JANGAN DI-GUARD
   if (pathname === '/admin/login') {

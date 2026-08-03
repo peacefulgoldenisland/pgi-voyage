@@ -15,10 +15,9 @@ import {
   ShieldCheck,
   Ship,
   Map,
-  Star // Ikon baru untuk menu Reviews
+  Star 
 } from 'lucide-react';
 
-// Menu tersisa setelah B2C dan B2B dihapus, ditambah Guest Reviews
 const sidebarLinks = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
   { name: 'Blog & Journal', href: '/admin/blog', icon: BookOpen },
@@ -153,16 +152,16 @@ export default function AdminSidebar({
 
   return (
     <>
-      {/* DESKTOP SIDEBAR */}
-      <motion.aside 
-        onMouseEnter={() => setIsCollapsed(false)} // Melebar saat di-hover
-        onMouseLeave={() => setIsCollapsed(true)}  // Mengecil saat kursor pergi
-        animate={{ width: isCollapsed ? 80 : 288 }} // 80px = w-20, 288px = w-72
-        transition={{ type: "spring", bounce: 0, duration: 0.4 }}
-        className="hidden lg:flex flex-col bg-[#0b1728] border-r border-[#11223a] fixed h-full z-30 shadow-2xl"
+      {/* DESKTOP SIDEBAR - Menggunakan CSS Transition agar sinkron dengan Layout */}
+      <aside 
+        onMouseEnter={() => setIsCollapsed(false)}
+        onMouseLeave={() => setIsCollapsed(true)}
+        className={`hidden lg:flex flex-col bg-[#0b1728] border-r border-[#11223a] fixed top-0 left-0 h-full z-50 shadow-2xl transition-all duration-300 ease-in-out overflow-hidden ${
+          isCollapsed ? 'w-20' : 'w-72'
+        }`}
       >
         <SidebarContent />
-      </motion.aside>
+      </aside>
 
       {/* MOBILE SIDEBAR OVERLAY */}
       <AnimatePresence>
@@ -177,7 +176,6 @@ export default function AdminSidebar({
               initial={{ x: "-100%" }} animate={{ x: 0 }} exit={{ x: "-100%" }} transition={{ type: "spring", bounce: 0, duration: 0.4 }}
               className="fixed top-0 left-0 h-full w-72 bg-[#0b1728] border-r border-[#11223a] z-50 flex flex-col shadow-2xl lg:hidden"
             >
-              {/* Force expand on mobile view */}
               <div className="h-full w-72">
                 <SidebarContent />
               </div>
