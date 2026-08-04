@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { signOut } from 'firebase/auth';
@@ -15,14 +15,26 @@ import {
   ShieldCheck,
   Ship,
   Map,
-  Star 
+  Star,
+  ChevronDown
 } from 'lucide-react';
 
+// 1. Update struktur link untuk mendukung children/sub-menu
 const sidebarLinks = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
   { name: 'Blog & Journal', href: '/admin/blog', icon: BookOpen },
   { name: 'Gallery Assets', href: '/admin/gallery', icon: ImageIcon },
-  { name: 'Expedition', href: '/admin/expedition', icon: Map },
+  { 
+    name: 'Expedition', 
+    icon: Map, 
+    children: [
+      { name: 'Itinerary', href: '/admin/expedition/itinerary' },
+      { name: 'Highlights', href: '/admin/expedition/highlights' },
+      { name: 'Cabin Packages', href: '/admin/expedition/cabins' },
+      { name: 'Payments', href: '/admin/expedition/payments' },
+      { name: 'Info & FAQs', href: '/admin/expedition/info' },
+    ]
+  },
   { name: 'Guest Reviews', href: '/admin/reviews', icon: Star },
   { name: 'Settings', href: '/admin/settings', icon: Settings },
 ];
@@ -43,6 +55,16 @@ export default function AdminSidebar({
   const pathname = usePathname();
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  
+  // State untuk melacak menu dropdown mana yang terbuka
+  const [openDropdowns, setOpenDropdowns] = useState<Record<string, boolean>>({});
+
+  // Buka dropdown secara otomatis jika halaman aktif ada di dalamnya
+  useEffect(() => {
+    if (pathname.startsWith('/admin/expedition')) {
+      setOpenDropdowns(prev => ({ ...prev, 'Expedition': true }));
+    }
+  }, [pathname]);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -54,6 +76,13 @@ export default function AdminSidebar({
       console.error("Gagal logout:", error);
       setIsLoggingOut(false);
     }
+  };
+
+  const toggleDropdown = (menuName: string) => {
+    setOpenDropdowns(prev => ({
+      ...prev,
+      [menuName]: !prev[menuName]
+    }));
   };
 
   const SidebarContent = () => (
@@ -90,36 +119,112 @@ export default function AdminSidebar({
         )}
         
         {sidebarLinks.map((link) => {
-          const isActive = pathname === link.href || pathname.startsWith(link.href + '/');
           const Icon = link.icon;
+          const hasChildren = !!link.children;
+          // Cek apakah ini menu biasa yang sedang aktif, atau parent dropdown yang sedang aktif
+          const isDirectlyActive = link.href ? (pathname === link.href || pathname.startsWith(link.href + '/')) : false;
+          const isParentActive = hasChildren ? link.children!.some(child => pathname === child.href) : false;
+          const isActive = isDirectlyActive || isParentActive;
+          const isOpen = openDropdowns[link.name];
           
           return (
-            <Link
-              key={link.name}
-              href={link.href}
-              title={isCollapsed ? link.name : ""}
-              onClick={() => setIsMobileOpen(false)}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 relative group ${
-                isActive 
-                  ? 'bg-[#B88E52] text-white shadow-lg shadow-[#B88E52]/20' 
-                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
-              } ${isCollapsed ? 'justify-center' : ''}`}
-            >
-              <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-white' : 'group-hover:text-[#B88E52] transition-colors'}`} />
-              
+            <div key={link.name} className="flex flex-col">
+              {/* Jika Parent punya Children, gunakan tag Button (Bukan Link) */}
+              {hasChildren ? (
+                <button
+                  onClick={() => toggleDropdown(link.name)}
+                  title={isCollapsed ? link.name : ""}
+                  className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-300 relative group ${
+                    isActive 
+                      ? 'bg-white/10 text-white' 
+                      : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                  } ${isCollapsed ? 'justify-center' : ''}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-[#B88E52]' : 'group-hover:text-[#B88E52] transition-colors'}`} />
+                    <AnimatePresence>
+                      {!isCollapsed && (
+                        <motion.span 
+                          initial={{ opacity: 0, width: 0 }}
+                          animate={{ opacity: 1, width: 'auto' }}
+                          exit={{ opacity: 0, width: 0 }}
+                          className="font-medium text-sm whitespace-nowrap overflow-hidden"
+                        >
+                          {link.name}
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                  {!isCollapsed && (
+                    <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isOpen ? 'rotate-180 text-[#B88E52]' : 'text-gray-500'}`} />
+                  )}
+                </button>
+              ) : (
+                /* Jika Menu Biasa */
+                <Link
+                  href={link.href!}
+                  title={isCollapsed ? link.name : ""}
+                  onClick={() => setIsMobileOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 relative group ${
+                    isActive 
+                      ? 'bg-[#B88E52] text-white shadow-lg shadow-[#B88E52]/20' 
+                      : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                  } ${isCollapsed ? 'justify-center' : ''}`}
+                >
+                  <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-white' : 'group-hover:text-[#B88E52] transition-colors'}`} />
+                  <AnimatePresence>
+                    {!isCollapsed && (
+                      <motion.span 
+                        initial={{ opacity: 0, width: 0 }}
+                        animate={{ opacity: 1, width: 'auto' }}
+                        exit={{ opacity: 0, width: 0 }}
+                        className="font-medium text-sm whitespace-nowrap overflow-hidden"
+                      >
+                        {link.name}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </Link>
+              )}
+
+              {/* Tampilkan Dropdown Children (Hanya jika terbuka dan tidak sedang collapsed) */}
               <AnimatePresence>
-                {!isCollapsed && (
-                  <motion.span 
-                    initial={{ opacity: 0, width: 0 }}
-                    animate={{ opacity: 1, width: 'auto' }}
-                    exit={{ opacity: 0, width: 0 }}
-                    className="font-medium text-sm whitespace-nowrap overflow-hidden"
+                {hasChildren && isOpen && !isCollapsed && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="flex flex-col space-y-1 overflow-hidden"
                   >
-                    {link.name}
-                  </motion.span>
+                    <div className="pl-11 pr-4 py-2 flex flex-col gap-1 relative">
+                      {/* Garis vertikal estetis penyambung submenu */}
+                      <div className="absolute left-[26px] top-0 bottom-2 w-[1px] bg-white/10"></div>
+                      
+                      {link.children!.map(child => {
+                        const isChildActive = pathname === child.href;
+                        return (
+                          <Link
+                            key={child.name}
+                            href={child.href}
+                            onClick={() => setIsMobileOpen(false)}
+                            className={`px-4 py-2.5 rounded-lg text-sm transition-all duration-200 relative ${
+                              isChildActive
+                                ? 'text-white bg-[#B88E52] shadow-md shadow-[#B88E52]/20 font-bold'
+                                : 'text-gray-400 hover:text-white hover:bg-white/5'
+                            }`}
+                          >
+                            {/* Titik indikator kecil di kiri teks */}
+                            <span className={`absolute left-[-22px] top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full ${isChildActive ? 'bg-[#B88E52] shadow-[0_0_8px_#B88E52]' : 'bg-transparent'}`}></span>
+                            {child.name}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
                 )}
               </AnimatePresence>
-            </Link>
+            </div>
           );
         })}
       </div>
