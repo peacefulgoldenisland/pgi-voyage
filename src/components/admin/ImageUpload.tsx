@@ -94,4 +94,4 @@ export default function ImageUpload({ value, onChange, label }: { value: string,
       </div>
     </div>
   );
-}
+} 

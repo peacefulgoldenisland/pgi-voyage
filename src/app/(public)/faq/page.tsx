@@ -270,4 +270,4 @@ export default function FaqPage() {
 
     </main>
   );
-}
+} 

@@ -12,7 +12,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const blogsRef = collection(db, 'blogs');
   const q = query(blogsRef, where('slug', '==', slug), where('status', '==', 'Published'), limit(1));
   const querySnapshot = await getDocs(q);
-
+ 
   if (querySnapshot.empty) {
     return { title: 'Article Not Found | PGI Voyage' };
   }

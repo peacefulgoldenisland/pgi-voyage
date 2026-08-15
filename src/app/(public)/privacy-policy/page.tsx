@@ -354,4 +354,4 @@ export default function PrivacyPolicyPage() {
       </section>
     </main>
   );
-}
+} 

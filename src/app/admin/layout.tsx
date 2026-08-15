@@ -62,4 +62,4 @@ export default function AdminLayout({
       </AuthGuard>
     </AuthProvider>
   );
-}
+} 

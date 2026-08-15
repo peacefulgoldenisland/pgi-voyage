@@ -13,4 +13,4 @@ export const metadata: Metadata = {
 
 export default function BoatDetailsLayout({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
-}
+} 

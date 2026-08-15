@@ -503,6 +503,6 @@ export default function CreateGalleryMediaPage() {
           </div>
         </motion.div>
       </div>
-    </div>
+    </div> 
   );
 }

@@ -45,7 +45,7 @@ export default function GoogleAnalytics({ GA_MEASUREMENT_ID }: { GA_MEASUREMENT_
     </>
   );
 }
-
+ 
 // Tambahan TypeScript global type agar window.gtag tidak memunculkan error garis merah di Editor/VSCode
 declare global {
   interface Window {

@@ -18,5 +18,5 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 // Inisialisasi dan export layanan Firebase yang dibutuhkan
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+export const db = getFirestore(app); 
 export const storage = getStorage(app);

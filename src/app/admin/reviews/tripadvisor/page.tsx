@@ -244,4 +244,4 @@ export default function TripAdvisorSyncPage() {
       </div>
     </div>
   );
-}
+} 

@@ -12,7 +12,7 @@ const NAV_ITEMS = [
   { name: 'Our Expedition', href: '/expedition' },
   { 
     name: 'DISCOVER', 
-    dropdown: [
+    dropdown: [ 
       { name: 'About Us', href: '/about-us' },
       { name: 'The Vessel & Safety', href: '/boat-details' },
       { name: 'Guest Reviews', href: '/review' },

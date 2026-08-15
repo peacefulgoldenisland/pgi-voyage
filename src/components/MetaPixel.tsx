@@ -51,4 +51,4 @@ declare global {
     fbq: any;
     _fbq: any;
   }
-}
+} 

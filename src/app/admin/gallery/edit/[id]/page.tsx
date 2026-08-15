@@ -552,4 +552,4 @@ export default function EditGalleryMediaPage() {
       </div>
     </div>
   );
-}
+} 

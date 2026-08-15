@@ -25,4 +25,4 @@ export default function PublicTemplate({
       {children}
     </motion.div>
   );
-}
+} 

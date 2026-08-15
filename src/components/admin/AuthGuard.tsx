@@ -66,4 +66,4 @@ export default function AuthGuard({ children, allowedRoles }: AuthGuardProps) {
 
   // Jika semua pengecekan lulus, persilakan masuk!
   return <>{children}</>;
-}
+} 

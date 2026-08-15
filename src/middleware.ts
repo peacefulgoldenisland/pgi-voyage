@@ -27,4 +27,4 @@ export function middleware(request: NextRequest) {
 // Tentukan rute mana saja yang harus dijaga oleh satpam ini
 export const config = {
   matcher: ['/admin/:path*'],
-};
+}; 

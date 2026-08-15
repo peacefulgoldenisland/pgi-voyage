@@ -667,4 +667,4 @@ export default function ExpeditionPage() {
 
     </main>
   );
-}
+} 

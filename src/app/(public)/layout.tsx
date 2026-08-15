@@ -13,7 +13,7 @@ export default function PublicLayout({
       <div className="flex-grow flex flex-col">
         {children}
       </div>
-      <PublicFooter />
+      <PublicFooter /> 
     </div>
   );
 }

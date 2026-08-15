@@ -10,7 +10,7 @@ export const CONTACT = {
   PHONE_1: "+62 878 1786 5690",
   PHONE_2: "+62 878 1786 5709",
   ADDRESS: "Kopang Rembiga, Central Lombok Regency, West Nusa Tenggara",
-};
+}; 
 
 export const SOCIAL_MEDIA = {
   INSTAGRAM: "https://instagram.com/goldenislandvoyage", // Nanti bisa disesuaikan link aslinya

@@ -229,4 +229,4 @@ export default function ExpeditionCabinsPage() {
       </div>
     </div>
   );
-}
+} 

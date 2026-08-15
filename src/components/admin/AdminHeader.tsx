@@ -107,4 +107,4 @@ export default function AdminHeader({ setIsMobileOpen }: AdminHeaderProps) {
       </div>
     </motion.header>
   );
-}
+} 

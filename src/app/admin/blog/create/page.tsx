@@ -674,5 +674,5 @@ export default function CreateBlogPage() {
         )}
       </AnimatePresence>
     </>
-  );
+  ); 
 }
