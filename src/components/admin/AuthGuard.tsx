@@ -26,8 +26,9 @@ export default function AuthGuard({ children, allowedRoles }: AuthGuardProps) {
     // 2. Kita berada di sisi client (isClient)
     if (!loading && isClient) {
       if (!user) {
-        // Jika middleware kebobolan (jarang terjadi tapi buat jaga-jaga)
-        console.log("AuthGuard: User tidak ada, redirect ke login");
+        // Jika middleware kebobolan (cookie ada tapi auth null), hapus cookie agar tidak infinite loop
+        console.log("AuthGuard: User tidak ada, hapus cookie & redirect ke login");
+        document.cookie = "admin_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
         router.push('/admin/login');
       } else if (!allowedRoles.includes(user.role)) {
         // Jika user login tapi rolenya tidak diizinkan
@@ -38,8 +39,9 @@ export default function AuthGuard({ children, allowedRoles }: AuthGuardProps) {
            router.push('/admin/dashboard'); 
         } else {
             // Kalau dia masuk ke dashboard tapi gak punya role juga? 
-            // Terpaksa kita suruh logout / ke halaman depan, ini kasus ekstrem
+            // Kita redirect ke halaman depan atau login agar layar tidak blank/hitam.
             console.error("User masuk dashboard tapi tidak punya akses sama sekali.");
+            router.push('/'); // redirect ke landing page atau /admin/login
         }
       }
     }

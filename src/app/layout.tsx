@@ -61,6 +61,7 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${playfair.variable} ${lato.variable} h-full antialiased`}
+      data-scroll-behavior="smooth"
     >
       {/* Set font Lato sebagai default font body dan warna teks abu gelap elegan */}
       <body className="min-h-full flex flex-col font-body text-gray-800 bg-white">

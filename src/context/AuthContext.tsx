@@ -34,17 +34,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.log("AuthContext: User terdeteksi dari Firebase Auth:", firebaseUser.uid);
         try {
           // Ambil role dari Firestore berdasarkan UID
-          // PERHATIAN: Kita menggunakan koleksi 'admin_users' sesuai dengan Firestore Rules kamu
-          const userDocRef = doc(db, 'admin_users', firebaseUser.uid);
+          // Disamakan dengan pmm-booking-engine: menggunakan koleksi 'users'
+          const userDocRef = doc(db, 'users', firebaseUser.uid);
           const userDocSnap = await getDoc(userDocRef);
 
           let role = 'user'; // Default role jika dokumen tidak ditemukan
 
           if (userDocSnap.exists()) {
-            console.log("AuthContext: Dokumen admin_users ditemukan!");
+            console.log("AuthContext: Dokumen users ditemukan!");
             role = userDocSnap.data().role || 'user';
           } else {
-            console.warn("AuthContext: Dokumen admin_users TIDAK DITEMUKAN untuk UID ini. Pastikan Anda sudah membuat dokumen di Firestore dengan ID = UID user ini.");
+            console.warn("AuthContext: Dokumen users TIDAK DITEMUKAN untuk UID ini.");
           }
 
           setUser({
