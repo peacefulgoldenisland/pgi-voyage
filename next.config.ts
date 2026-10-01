@@ -1,7 +1,20 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  async redirects() {
+    return [
+      {
+        source: '/admin/:path*',
+        destination: 'https://admin.peacefulgoldenisland.com/:path*',
+        permanent: true,
+      },
+      {
+        source: '/admin',
+        destination: 'https://admin.peacefulgoldenisland.com',
+        permanent: true,
+      },
+    ]
+  },
 };
 
 export default nextConfig;
